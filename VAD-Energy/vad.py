@@ -153,9 +153,10 @@ def nrg_vad(xframes,percent_thr,nrg_thr=0.,context=5):
     return xvad
 
 
-if __name__=='__main__':
+def detectSpeech(data, Fs):
     test_file='/content/drive/MyDrive/Data/google_speech/train/bed/00176480_nohash_0.wav'
-    fs,s = read_wav(test_file)
+    #fs,s = read_wav(test_file)
+    s, fs = data, Fs
     win_len = int(fs*0.025)
     #win_len = win
     hop_len = int(fs*0.010)
@@ -170,4 +171,4 @@ if __name__=='__main__':
 
     values = plot_these(deframe(vad,win_len,hop_len),s)
     where = np.where(values[0] == 1)
-    speechIndices = min(where[0]), max(where[0])
+    return min(where[0]), max(where[0])
