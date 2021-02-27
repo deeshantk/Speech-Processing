@@ -20,7 +20,7 @@ Creating a 1000-secound training signal by combining speech files and random per
 '''
 
 def dataCreate(path, files):
-  duration = 2000 * Fs
+  duration = 1000 * Fs
   audioTraining = np.zeros((duration,1), dtype = float)
   maskTraining = np.zeros((duration, 1), dtype = float)
   maxSilenceSegment = 2
@@ -29,7 +29,7 @@ def dataCreate(path, files):
   while numSamples < duration:
     if file_ind == len(files):
       break
-    data, _ = librosa.load(os.path.join(path, files[file_ind]))
+    data, _ = librosa.load(os.path.join(path, files[file_ind]), 16000)
     data = data / max(abs(data))
     idx = detectSpeech(data, Fs)
     try:
@@ -43,6 +43,34 @@ def dataCreate(path, files):
     file_ind += 1
   return audioTraining, maskTraining
 
+'''
+Adding noise to training data such that SNR is -5 dB.
+'''
+def addNoise(audioTraining, noise):
+  noise = noise.reshape(len(noise), -1)
+  noise = noise[:len(audioTraining)]
+#  audioTraining = audioTraining[:len(noise)]
+  SNR = -5
+  noise = (10**(-SNR/20)) * noise * np.linalg.norm(audioTraining) / np.linalg.norm(noise)
+  #noise = noise / max(abs(noise))
+  audioTrainingNoisy = audioTraining + noise
+  audioTrainingNoisy = audioTrainingNoisy / max(abs(audioTrainingNoisy))
+  return audioTrainingNoisy
 
-files = get_files(path)
-audioTraining, maskTraining = dataCreate('/content/drive/MyDrive/Data/google_speech/train', files)
+'''
+Creating noise of length at least 1000 secounds to add in our training data.  
+'''
+def noiseProcess(noise, length):
+  noise, sr = librosa.load(noise, 16000)
+  total_len = (1/sr) * len(noise)
+  while total_len < length:
+    noise = np.append(noise, noise)
+    total_len = (1/sr) * len(noise)
+ # noise = noise[:length]
+  return noise
+
+
+files = get_files(path) #Add path 
+audioTraining, maskTraining = dataCreate(training_path, files)    #Add path
+noise = noiseProcess(noise_path, 1000)      #Add path
+audioTrainingNoisy = addNoise(audioTraining, noise)
